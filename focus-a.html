@@ -99,6 +99,8 @@
         let timeoutId = null;
         let statusTimeoutId = null;
         let isFirstIncrement = true;
+        let audioContext = null;
+        let soundEnabled = false;
 
         // Fishing status messages
         const fishingStatuses = [
@@ -127,6 +129,11 @@
                 isFirstIncrement = true;
                 startMessage.style.display = 'none';
                 pulse.style.display = 'block';
+                
+                // Initialize audio context on first user interaction
+                if (!audioContext) {
+                    initAudio();
+                }
                 
                 // Start fishing status updates
                 updateFishingStatus();
@@ -178,11 +185,7 @@
                 messageElement.classList.add('oops');
             } else {
                 // Play sound for successful increments only
-                incrementSound.currentTime = 0; // Reset sound to start
-                incrementSound.play().catch(error => {
-                    // Silently handle any autoplay restrictions
-                    console.log('Sound playback prevented:', error);
-                });
+                playSound();
             }
             
             const position = getRandomPosition();
@@ -231,6 +234,61 @@
             // Schedule next increment
             const delay = getRandomDelay();
             timeoutId = setTimeout(incrementCounter, delay);
+        }
+        
+        // Initialize audio for mobile compatibility
+        function initAudio() {
+            try {
+                // Create audio context
+                window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioContext = new AudioContext();
+                soundEnabled = true;
+                
+                // Resume audio context if it's suspended (needed for some mobile browsers)
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                
+                console.log('Audio initialized successfully');
+            } catch (e) {
+                console.error('Audio initialization failed:', e);
+                soundEnabled = false;
+            }
+        }
+        
+        // Play sound with better mobile compatibility
+        function playSound() {
+            if (!soundEnabled) return;
+            
+            try {
+                // Try the audio element first
+                incrementSound.currentTime = 0;
+                let playPromise = incrementSound.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log('Audio element playback failed, trying alternative method');
+                        // If audio element fails, try Web Audio API as fallback
+                        if (audioContext) {
+                            const oscillator = audioContext.createOscillator();
+                            const gainNode = audioContext.createGain();
+                            
+                            oscillator.type = 'sine';
+                            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                            oscillator.connect(gainNode);
+                            gainNode.connect(audioContext.destination);
+                            
+                            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                            
+                            oscillator.start();
+                            oscillator.stop(audioContext.currentTime + 0.3);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Sound playback error:', e);
+            }
         }
         
         // Event listener for clicks
