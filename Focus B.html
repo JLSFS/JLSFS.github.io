@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown Timer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
+            position: relative;
+        }
+        .container {
+            text-align: center;
+            padding: 30px;
+            background-color: #111;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            z-index: 1;
+        }
+        .timer {
+            font-size: 6rem;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            background-color: #333;
+            color: #fff;
+            transition: background-color 0.3s;
+        }
+        button:hover:not(:disabled) {
+            background-color: #444;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #startBtn {
+            background-color: #444;
+        }
+        #pauseBtn {
+            background-color: #333;
+        }
+        #cancelBtn {
+            background-color: #222;
+        }
+        .message {
+            font-size: 1.5rem;
+            margin-top: 20px;
+            color: #fff;
+            font-weight: bold;
+            display: none;
+        }
+        input {
+            padding: 10px;
+            font-size: 1rem;
+            width: 60px;
+            text-align: center;
+            margin: 0 5px;
+            background-color: #222;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 5px;
+        }
+        input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        label {
+            font-size: 1rem;
+            color: #ccc;
+        }
+        .pulse {
+            height: 10px;
+            width: 10px;
+            background-color: #fff;
+            border-radius: 50%;
+            margin: 20px auto 0;
+            animation: pulse 1.5s infinite ease-in-out;
+            display: none;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Let's Focus!</h1>
+        
+        <div class="setup">
+            <label for="minutes">Minutes:</label>
+            <input type="number" id="minutes" min="1" max="59" value="25">
+        </div>
+        
+        <div class="timer" id="timer">25:00</div>
+        <div class="pulse" id="pulse"></div>
+        
+        <div class="controls">
+            <button id="startBtn">Start</button>
+            <button id="pauseBtn" disabled>Pause</button>
+            <button id="cancelBtn" disabled>Reset</button>
+        </div>
+        
+        <div class="message" id="message">Time's up!</div>
+    </div>
+
+    <script>
+        const timer = document.getElementById('timer');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const message = document.getElementById('message');
+        const minutesInput = document.getElementById('minutes');
+        const pulse = document.getElementById('pulse');
+        
+        let countdown;
+        let totalSeconds = 1500; // 25 minutes default
+        let isRunning = false;
+        let isPaused = false;
+        
+        // Format time as MM:SS
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            
+            return [
+                minutes.toString().padStart(2, '0'),
+                secs.toString().padStart(2, '0')
+            ].join(':');
+        }
+
+        // Update timer display when minutes input changes
+        function updateTimerDisplay() {
+            const minutes = parseInt(minutesInput.value) || 25;
+            totalSeconds = minutes * 60;
+            timer.textContent = formatTime(totalSeconds);
+        }
+        
+        // Start the countdown
+        function startTimer() {
+            if (isRunning && !isPaused) return;
+            
+            if (!isPaused) {
+                const minutes = parseInt(minutesInput.value) || 25;
+                
+                // Validate input
+                if (minutes > 59 || minutes < 1) {
+                    alert("Minutes must be between 1 and 59");
+                    return;
+                }
+                
+                totalSeconds = minutes * 60;
+            }
+            
+            isRunning = true;
+            isPaused = false;
+            startBtn.textContent = 'Start';
+            
+            // Update UI
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            cancelBtn.disabled = false;
+            minutesInput.disabled = true;
+            message.style.display = 'none';
+            pulse.style.display = 'block';
+            
+            // Start countdown
+            countdown = setInterval(() => {
+                totalSeconds--;
+                timer.textContent = formatTime(totalSeconds);
+                
+                if (totalSeconds <= 0) {
+                    clearInterval(countdown);
+                    isRunning = false;
+                    message.style.display = 'block';
+                    startBtn.disabled = false;
+                    pauseBtn.disabled = true;
+                    cancelBtn.disabled = true;
+                    minutesInput.disabled = false;
+                    pulse.style.display = 'none';
+                }
+            }, 1000);
+        }
+
+        // Pause the countdown
+        function pauseTimer() {
+            clearInterval(countdown);
+            isPaused = true;
+            startBtn.textContent = 'Resume';
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            pulse.style.display = 'none';
+        }
+        
+        // Cancel the countdown
+        function cancelTimer() {
+            clearInterval(countdown);
+            isRunning = false;
+            isPaused = false;
+            totalSeconds = parseInt(minutesInput.value) * 60 || 1500; // Use current input value or default to 25 minutes
+            timer.textContent = formatTime(totalSeconds);
+            startBtn.textContent = 'Start';
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            cancelBtn.disabled = true;
+            minutesInput.disabled = false;
+            message.style.display = 'none';
+            pulse.style.display = 'none';
+        }
+        
+        // Event listeners
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        cancelBtn.addEventListener('click', cancelTimer);
+        minutesInput.addEventListener('input', updateTimerDisplay);
+    </script>
+</body>
+</html>

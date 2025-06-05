@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Counter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+        }
+        .container {
+            text-align: center;
+            padding: 30px;
+            background-color: #111;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            z-index: 1;
+        }
+        .counter {
+            font-size: 6rem;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .start-message {
+            font-size: 1.5rem;
+            margin-top: 20px;
+            color: #ccc;
+        }
+        .encouragement {
+            position: absolute;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #fff;
+            animation: fadeOut 10s forwards;
+            z-index: 2;
+        }
+        .oops {
+            color: #ddd;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            85% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        .status {
+            font-size: 1rem;
+            margin-top: 10px;
+            color: #888;
+        }
+        .pulse {
+            height: 10px;
+            width: 10px;
+            background-color: #fff;
+            border-radius: 50%;
+            margin: 20px auto 0;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fish Caught</h1>
+        <div class="counter" id="counter">0</div>
+        <div class="start-message" id="startMessage">Click anywhere to start</div>
+        <div class="status" id="status"></div>
+        <div class="pulse" id="pulse" style="display: none;"></div>
+        <audio id="incrementSound" preload="auto">
+            <source src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <script>
+        const body = document.body;
+        const counter = document.getElementById('counter');
+        const startMessage = document.getElementById('startMessage');
+        const status = document.getElementById('status');
+        const pulse = document.getElementById('pulse');
+        const incrementSound = document.getElementById('incrementSound');
+        incrementSound.volume = 0.3;
+        
+        let count = 0;  // Add this line to declare the count variable
+        let isRunning = false;
+        let timeoutId = null;
+        let statusTimeoutId = null;
+        let isFirstIncrement = true;
+
+        // Fishing status messages
+        const fishingStatuses = [
+            "Casting the Line",
+            "Waiting for a Bite",
+            "Watching for movements",
+            "Getting a Bite",
+            "Reeling In"
+        ];
+
+        // Function to update status randomly
+        function updateFishingStatus() {
+            if (!isRunning) return;
+            const randomIndex = Math.floor(Math.random() * fishingStatuses.length);
+            status.textContent = fishingStatuses[randomIndex];
+            
+            // Schedule next status update between 2-5 seconds
+            statusTimeoutId = setTimeout(updateFishingStatus, Math.random() * 3000 + 2000);
+        }
+        
+        // Toggle counter running state
+        function toggleCounter() {
+            if (!isRunning) {
+                // Start counter
+                isRunning = true;
+                isFirstIncrement = true;
+                startMessage.style.display = 'none';
+                pulse.style.display = 'block';
+                
+                // Start fishing status updates
+                updateFishingStatus();
+                
+                // Schedule first increment
+                const delay = getRandomDelay();
+                timeoutId = setTimeout(incrementCounter, delay);
+            } else {
+                // Pause counter
+                isRunning = false;
+                clearTimeout(timeoutId);
+                clearTimeout(statusTimeoutId);
+                startMessage.style.display = 'block';
+                startMessage.textContent = 'Click anywhere to resume';
+                status.textContent = 'Paused';
+                pulse.style.display = 'none';
+            }
+        }
+        
+        // Encouragement messages
+        const encouragements = [
+            "OMG it went up!",
+            "Yay!",
+            "别墅里面唱K",
+            "Could you believe your eyes?",
+            "Nice~",
+            ":)",
+            "I love you",
+            "<3",
+            "Your heart is in the work",
+            "Fabulous!",
+            "Keep it up!"
+        ];
+        
+        // Get random position on screen
+        function getRandomPosition() {
+            const x = Math.random() * (window.innerWidth - 200);
+            const y = Math.random() * (window.innerHeight - 100);
+            return { x, y };
+        }
+        
+        // Display message at random position
+        function showMessage(message, isOops = false) {
+            const messageElement = document.createElement('div');
+            messageElement.textContent = message;
+            messageElement.classList.add('encouragement');
+            
+            if (isOops) {
+                messageElement.classList.add('oops');
+            } else {
+                // Play sound for successful increments only
+                incrementSound.currentTime = 0; // Reset sound to start
+                incrementSound.play().catch(error => {
+                    // Silently handle any autoplay restrictions
+                    console.log('Sound playback prevented:', error);
+                });
+            }
+            
+            const position = getRandomPosition();
+            messageElement.style.left = `${position.x}px`;
+            messageElement.style.top = `${position.y}px`;
+            
+            body.appendChild(messageElement);
+            
+            setTimeout(() => {
+                body.removeChild(messageElement);
+            }, 10000);
+        }
+        
+        // Get random delay between 10 seconds and 1 minute
+        function getRandomDelay() {
+            // Between 30000ms (30s) and 90000ms (90s)
+            return Math.floor(Math.random() * (90000 - 30000 + 1)) + 30000;
+        }
+        
+        // Increment counter randomly
+        function incrementCounter() {
+            if (!isRunning) return;
+            
+            const randomValue = Math.random();
+            
+            if (randomValue < 0.1 && !isFirstIncrement) {
+                // 10% chance of failing to increment (but not on first increment)
+                showMessage("Oops! My bad :(", true);
+            } else if (randomValue < 0.3 && !isFirstIncrement) {
+                // 20% chance of incrementing by 2 (not on first increment)
+                count += 2;
+                counter.textContent = count;
+                const randomIndex = Math.floor(Math.random() * encouragements.length);
+                showMessage(encouragements[randomIndex]);
+                showMessage("Bonus +2!");
+                isFirstIncrement = false;
+            } else {
+                // Regular increment by 1
+                count++;
+                counter.textContent = count;
+                const randomIndex = Math.floor(Math.random() * encouragements.length);
+                showMessage(encouragements[randomIndex]);
+                isFirstIncrement = false;
+            }
+            
+            // Schedule next increment
+            const delay = getRandomDelay();
+            timeoutId = setTimeout(incrementCounter, delay);
+        }
+        
+        // Event listener for clicks
+        body.addEventListener('click', toggleCounter);
+    </script>
+</body>
+</html>
