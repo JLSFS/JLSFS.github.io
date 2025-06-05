@@ -92,9 +92,9 @@
         const status = document.getElementById('status');
         const pulse = document.getElementById('pulse');
         const incrementSound = document.getElementById('incrementSound');
-        incrementSound.volume = 0.3;
+        incrementSound.volume = 0.2; // Reduced volume for more subtle effect
         
-        let count = 0;  // Add this line to declare the count variable
+        let count = 0;  
         let isRunning = false;
         let timeoutId = null;
         let statusTimeoutId = null;
@@ -261,28 +261,33 @@
             if (!soundEnabled) return;
             
             try {
-                // Try the audio element first
+                // Try the audio element first with the original sound
                 incrementSound.currentTime = 0;
                 let playPromise = incrementSound.play();
                 
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
                         console.log('Audio element playback failed, trying alternative method');
-                        // If audio element fails, try Web Audio API as fallback
+                        // If audio element fails, try Web Audio API as fallback with a gentler sound
                         if (audioContext) {
+                            // Create a more zen-like bell sound using the Web Audio API
                             const oscillator = audioContext.createOscillator();
                             const gainNode = audioContext.createGain();
                             
+                            // Use a sine wave for a smoother, more gentle sound
                             oscillator.type = 'sine';
-                            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                            // Lower frequency for a deeper, more meditative tone
+                            oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
                             oscillator.connect(gainNode);
                             gainNode.connect(audioContext.destination);
                             
-                            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                            // Start with a lower volume
+                            gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                            // Gentle fade out for zen-like quality
+                            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1.5);
                             
                             oscillator.start();
-                            oscillator.stop(audioContext.currentTime + 0.3);
+                            oscillator.stop(audioContext.currentTime + 1.5);
                         }
                     });
                 }
